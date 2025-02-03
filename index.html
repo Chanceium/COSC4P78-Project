@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Bluetooth</title>
+</head>
+<body>
+    <button id="connect">Connect to ESP32</button>
+    <button id="blink" disabled>Blink LED</button>
+    <script>
+        let device;
+        let characteristic;
+
+        document.getElementById('connect').addEventListener('click', () => {
+            navigator.bluetooth.requestDevice({
+                filters: [{ name: 'ESP32test' }],
+                optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb']
+            })
+            .then(dev => {
+                device = dev;
+                return device.gatt.connect();
+            })
+            .then(server => {
+                return server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+            })
+            .then(service => {
+                return service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
+            })
+            .then(char => {
+                characteristic = char;
+                document.getElementById('blink').disabled = false;
+                console.log('Connected to characteristic:', characteristic);
+            })
+            .catch(error => { console.log(error); });
+        });
+
+        document.getElementById('blink').addEventListener('click', () => {
+            let blinkSignal = new TextEncoder().encode('blink');
+            characteristic.writeValue(blinkSignal)
+            .then(() => {
+                console.log('Blink signal sent');
+            })
+            .catch(error => { console.log(error); });
+        });
+    </script>
+</body>
+</html>
