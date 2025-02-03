@@ -3,46 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESP32 Bluetooth</title>
+    <title>ESP32 BLE Control</title>
 </head>
 <body>
-    <button id="connect">Connect to ESP32</button>
-    <button id="blink" disabled>Blink LED</button>
+    <h1>ESP32 LED Control</h1>
+    <button id="connectBtn">Connect to ESP32</button>
+    <button id="blinkBtn" disabled>Blink LED</button>
+
     <script>
-        let device;
         let characteristic;
+        const serviceUUID = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
+        const characteristicUUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
+        
+        // Function to connect to the ESP32
+        async function connectToDevice() {
+            try {
+                console.log('Requesting Bluetooth device...');
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [{ services: [serviceUUID] }]
+                });
+                console.log('Connecting to device...');
+                const server = await device.gatt.connect();
+                console.log('Getting service...');
+                const service = await server.getPrimaryService(serviceUUID);
+                console.log('Getting characteristic...');
+                characteristic = await service.getCharacteristic(characteristicUUID);
+                console.log('Connected to ESP32');
 
-        document.getElementById('connect').addEventListener('click', () => {
-            navigator.bluetooth.requestDevice({
-                filters: [{ name: 'ESP32test' }],
-                optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb']
-            })
-            .then(dev => {
-                device = dev;
-                return device.gatt.connect();
-            })
-            .then(server => {
-                return server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
-            })
-            .then(service => {
-                return service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
-            })
-            .then(char => {
-                characteristic = char;
-                document.getElementById('blink').disabled = false;
-                console.log('Connected to characteristic:', characteristic);
-            })
-            .catch(error => { console.log(error); });
-        });
+                // Enable the Blink button after successful connection
+                document.getElementById('blinkBtn').disabled = false;
+                document.getElementById('connectBtn').disabled = true;
 
-        document.getElementById('blink').addEventListener('click', () => {
-            let blinkSignal = new TextEncoder().encode('blink');
-            characteristic.writeValue(blinkSignal)
-            .then(() => {
-                console.log('Blink signal sent');
-            })
-            .catch(error => { console.log(error); });
-        });
+                // Handle disconnection
+                device.addEventListener('gattserverdisconnected', () => {
+                    alert('Device disconnected');
+                    document.getElementById('blinkBtn').disabled = true;
+                    document.getElementById('connectBtn').disabled = false;
+                });
+            } catch (error) {
+                console.log('Error:', error);
+                alert('Failed to connect to device');
+            }
+        }
+
+        // Function to send a "blink" command to the ESP32
+        async function blinkLED() {
+            if (characteristic) {
+                try {
+                    const value = new TextEncoder().encode('blink'); // Encode 'blink' as bytes
+                    await characteristic.writeValue(value);
+                    console.log('Blink command sent');
+                } catch (error) {
+                    console.log('Error sending blink command:', error);
+                }
+            } else {
+                alert('Not connected to ESP32');
+            }
+        }
+
+        // Event listeners for buttons
+        document.getElementById('connectBtn').addEventListener('click', connectToDevice);
+        document.getElementById('blinkBtn').addEventListener('click', blinkLED);
     </script>
 </body>
 </html>
