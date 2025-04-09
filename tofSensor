@@ -1,0 +1,49 @@
+#include <Wire.h>
+#include <VL53L0X.h>
+
+// Define I2C pins (SDA and SCL)
+#define SDA_PIN 32
+#define SCL_PIN 33
+
+// Create a VL53L0X sensor object
+VL53L0X tofSensor;
+
+void setup() {
+  // Start serial communication
+  Serial.begin(115200);
+  Serial.println("ESP32 ToF Sensor Test");
+  
+  // Setup I2C communication on custom pins
+  Wire.begin(SDA_PIN, SCL_PIN);
+  
+  // Initialize the sensor
+  Serial.println("Initializing ToF sensor...");
+  if (!tofSensor.init()) {
+    Serial.println("Failed to initialize VL53L0X sensor!");
+    while (1);
+  }
+  
+  // Configure sensor for better accuracy
+  // Note: Lower speed but better accuracy
+  tofSensor.setMeasurementTimingBudget(200000); // 200 milliseconds
+  
+  Serial.println("ToF sensor initialized successfully!");
+}
+
+void loop() {
+  // Read the distance measurement
+  uint16_t distance = tofSensor.readRangeSingleMillimeters();
+  
+  // Check for timeout or error
+  if (tofSensor.timeoutOccurred()) {
+    Serial.println("ToF sensor timeout!");
+  } else {
+    // Print the distance in millimeters
+    Serial.print("Distance: ");
+    Serial.print(distance);
+    Serial.println(" mm");
+  }
+  
+  // Wait between readings
+  delay(500);
+}
