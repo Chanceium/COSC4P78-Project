@@ -3,8 +3,8 @@
 
 // ----- PIN DEFINITIONS -----
 // I2C pins for the VL53L0X ToF sensor (mounted on the left)
-#define SDA_PIN 23    // Updated to D12 for the ToF sensor
-#define SCL_PIN 22    // Updated to D13 for the ToF sensor
+#define SDA_PIN 21 
+#define SCL_PIN 22 
 
 // Motor A (Left Motor) pins
 const int motorA_IN1 = 27;
